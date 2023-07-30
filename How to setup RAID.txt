@@ -1,0 +1,58 @@
+# disable the selinux
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+read -p 'Enter Hostname: ' hostname
+hostnamectl set-hostname $hostname
+
+# installing Raid Package
+yum install mdadm -y &> /dev/null
+yum install vim -y &> /dev/null
+
+# command to create raid devices
+mdadm --create --verbose /dev/md0 --level=0 --raid-devices=2 /dev/sdb /dev/sdc
+
+# create new partition 
+fdisk /dev/md0 
+
+# format the new partion
+mkfs.ext4 /dev/md0
+
+# mount newly created parition 
+mkdir /mnt/raid0
+mnt /dev/md0 /mnt/raid0
+
+# to get information about the newly created partion
+mdadm --detail /dev/md0
+
+# to unmount the drive
+umount /mnt/raid0
+
+# to stop the mdadm array of disk
+mdadm --stop /dev/md0
+
+# to remove the mdadm array of disk
+mdadm --remove /dev/md0
+
+# now remove the super blocks from the disk
+mdadm -zero-superblock /dev/sdb /dev/sdc
+
+
+
+# Raid level 1 
+mdadm --create --verbose /dev/md0 --level=1 --raid-devices=2 /dev/sdb /dev/sdc
+
+# create new partition 
+fdisk /dev/md0 
+
+# format the new partion
+mkfs.ext4 /dev/md0
+
+# mount newly created parition 
+mkdir /mnt/raid0
+mnt /dev/md0 /mnt/raid0
+
+# to get information about the newly created partion
+mdadm --detail /dev/md0

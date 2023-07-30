@@ -1,0 +1,74 @@
+: server
+# (Add Two Hard disk sdb and sdc of 20GB each)
+
+# Setup the machine
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname iscsi-server
+
+# check if physical drives are added 
+lsblk
+or 
+sfdisk -s
+
+# create a physical volume 
+pvcreate /dev/sdb /dev/sdc
+
+# create volume group of the given devices
+vgcreate vg_iscsi /dev/sdb /dev/sdc
+
+# to check partitions
+lvs
+
+# install the targetcli Package
+yum install targetcli -y
+
+# run targetcli command
+targetcli
+
+# once we enter the targetcli 
+/> cd backstores/block
+> create block1 /dev/mapper/vg_iscsi-lv_iscsi--disk--01
+> cd ../../iscsi
+> create iqn.2022-12.cdac.acts.hpcsa.sbm:disk1
+> cd iqn.2022-12.cdac.acts.hpcsa.sbm:disk1/tpg1/acls
+> create iqn.2022-12.acts.student:306631cea220
+> cd ..
+> cd iqn.2022-12.cdac.acts.hpcsa.sbm:disk1/tpg1/luns
+> create /backstores/block/block1ls
+> exit
+
+# start the service 
+systemctl start target
+systemctl status target
+
+
+
+# install the iscsi-server
+
+: client
+# Setup the machine
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname iscsi-client
+
+# install the Packages
+yum install iscsi-initiator-utils -y
+
+# navigate to the directory
+cd /etc/iscsi
+
+# edit the initiatorname file
+echo "iqn.2022-12.acts.student:306631cea220" > /etc/iscsi
+
+# start the iscsi service
+systemctl start iscsi
+
+# check status of the service
+systemctl status iscsi
