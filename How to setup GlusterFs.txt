@@ -1,7 +1,7 @@
 : Server
 
 : server 1  
-# add physical hard drives
+# add physical hard drives to all servers
 # setup the machine
 setenforce 0;
 sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
