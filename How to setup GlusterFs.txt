@@ -1,0 +1,82 @@
+: Server
+
+: server 1  
+# add physical hard drives
+# setup the machine
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname Glusterfs-server
+
+# mount the drive
+fdisk /dev/sdb
+mkfs.xfs /dev/sdb1
+mkdir /mnt/disk1
+mount /dev/sdb /mnt/disk1
+
+# edit the hosts file
+echo "[ip] [fqdn] server1" >> /etc/hosts
+echo "[ip] [fqdn] server2" >> /etc/hosts
+echo "[ip] [fqdn] server3" >> /etc/hosts
+echo "[ip] [fqdn] client" >> /etc/hosts
+
+# download the Packages
+yum install wget centos-release-gluster epel-release glusterfs-server -y
+
+# start the services
+systemctl start glusterd
+systemctl enable glusterd
+
+# for node1 
+# add peers for server1
+gluster peer probe node2.hpcsa.in
+gluster peer probe node3.hpcsa.in
+
+# for node2 
+# add peers for server2
+gluster peer probe node1.hpcsa.in
+gluster peer probe node3.hpcsa.in
+
+# for node3 
+# add peers for server3
+gluster peer probe node1.hpcsa.in
+gluster peer probe node2.hpcsa.in
+
+# check the status of glusterfs cluster
+gluster peer status
+gluster pool list
+
+# create new directory for the gluster volume on each server
+mkdir /mnt/disk1/diskvol
+
+# create volume gdisk2 with 3 replicas, also giving address, where to store them
+gluster volume create gdisk2 replica 3 node1.hpcsa.in:/mnt/disk1/diskvol/gdisk2  
+node2.hpcsa.in:/mnt/disk1/diskvol/gdisk2  node3.hpcsa.in:/mnt/disk1/diskvol/gdisk2
+
+# start the gluster volume 
+gluster volume start gdisk2
+
+# check the information about the gluster volume
+gluster volume info gdisk2  
+
+: Client
+# setup the machine
+# setup the machine
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname Glusterfs-client
+
+# download the package 
+yum install glusterfs-fuse
+
+# create a directory for mounting the gluster volumet
+mkdir /mnt/gdrive
+
+# mount the drive on the client 
+mount -t glusterfs [FQDN]:/gdisk2 /mnt/gdrive
+
