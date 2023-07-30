@@ -17,10 +17,10 @@ mkdir /mnt/disk1
 mount /dev/sdb /mnt/disk1
 
 # edit the hosts file
-echo "[ip] [fqdn] server1" >> /etc/hosts
-echo "[ip] [fqdn] server2" >> /etc/hosts
-echo "[ip] [fqdn] server3" >> /etc/hosts
-echo "[ip] [fqdn] client" >> /etc/hosts
+echo "[ip] node1.hpcsa.in server1" >> /etc/hosts
+echo "[ip] node2.hpcsa.in server2" >> /etc/hosts
+echo "[ip] node3.hpcsa.in server3" >> /etc/hosts
+echo "[ip] client.hpcsa.in client" >> /etc/hosts
 
 # download the Packages
 yum install wget centos-release-gluster epel-release glusterfs-server -y
@@ -48,7 +48,7 @@ gluster peer probe node2.hpcsa.in
 gluster peer status
 gluster pool list
 
-# create new directory for the gluster volume on each server
+# create new directory for the gluster volume on each server1,server2,server3
 mkdir /mnt/disk1/diskvol
 
 # create volume gdisk2 with 3 replicas, also giving address, where to store them
@@ -62,7 +62,6 @@ gluster volume start gdisk2
 gluster volume info gdisk2  
 
 : Client
-# setup the machine
 # setup the machine
 setenforce 0;
 sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
@@ -78,5 +77,5 @@ yum install glusterfs-fuse
 mkdir /mnt/gdrive
 
 # mount the drive on the client 
-mount -t glusterfs [FQDN]:/gdisk2 /mnt/gdrive
+mount -t glusterfs node1.hpcsa.in:/gdisk2 /mnt/gdrive
 
