@@ -33,7 +33,7 @@ scp /etc/hosts root@ceph-client:/etc/hosts
 yum  chrony -y
 chronyc sourcestats
 
-# create user for ceph deplo
+# create user for ceph deployment
 echo "cephadm ALL = (root) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/cephadm
 chmod 0440 /etc/sudoers.d/cephadm
 
@@ -49,6 +49,53 @@ systemctl restart chronyd
 # Install the Ceph package and ceph deployment tool
 sudo rpm -Uvh https://download.ceph.com/rpm-mimic/el7/noarch/ceph-release-1-1.el7.noarch.rpm
 yum install ceph-deploy python2-pip  -y
+
+# generate ssh for cephadm user
+su - cephadm
+ssh-keygen
+
+# copy the ssh to all nodes
+ssh-copy-id cephadm@ceph-compute01
+ssh-copy-id cephadm@ceph-compute02
+ssh-copy-id cephadm@ceph-monitor
+ssh-copy-id cephadm@ceph-client
+
+# create folder as cephadm on ceph controller
+mkdir ceph_cluster
+cd ceph_cluster
+
+# create a new cluster:
+ceph-deploy new ceph-monitor
+
+# edit the configuration file 
+vim ceph.conf
+    -> add the line `public network = 192.168.xxx.xxx/24` where ip is local network ip
+
+# installing ceph on the nodes;
+ceph-deploy install ceph-controller ceph-monitor ceph-compute01 ceph-compute02
+
+# initialize the monitor
+ceph-deploy mon create-initial
+
+# deploy the ceph client admin keyring 
+ceph-deploy admin ceph-controller ceph-compute01 ceph-compute02 ceph-monitor
+
+# create ceph manager daemons
+ceph-deploy mgr create ceph-compute01 ceph-compute02
+
+# list the disk available
+ceph-deploy disk list ceph-compute01 ceph-compute02
+
+# prepare and activate the OSD for compute01 and compute02(Replace `/dev/sdb`, `/dev/sdc`, and `/dev/sdd`)
+    ceph-deploy osd create --data /dev/sdb ceph-compute01
+    ceph-deploy osd create --data /dev/sdc ceph-compute01
+    ceph-deploy osd create --data /dev/sdd ceph-compute01
+
+    ceph-deploy osd create --data /dev/sdb ceph-compute02
+    ceph-deploy osd create --data /dev/sdc ceph-compute02
+    ceph-deploy osd create --data /dev/sdd ceph-compute02
+
+
 
 : compute01
 # setup the machine 
@@ -86,3 +133,14 @@ systemctl stop firewalld; systemctl disable firewalld;
 # change the hostname
 hostnamectl set-hostname ceph-client
 
+# install ceph
+# create user for ceph deployment
+echo "cephadm ALL = (root) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/cephadm
+chmod 0440 /etc/sudoers.d/cephadm
+
+# install packages
+yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+# Install the Ceph package and ceph deployment tool
+sudo rpm -Uvh https://download.ceph.com/rpm-mimic/el7/noarch/ceph-release-1-1.el7.noarch.rpm
+yum install ceph-deploy python2-pip  -y
