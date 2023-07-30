@@ -1,0 +1,59 @@
+ # How to setup LVM
+ 
+ # setup the basic machine
+ # disable the selinux
+ setenforce 0;
+ sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+ # disable the firewall
+ systemctl stop firewalld; systemctl disable firewalld;
+ # change the hostname
+ read -p 'Enter Hostname: ' hstname
+ hostnamectl set-hostname lvm-lab
+
+ # check for the new hard disks
+ lsblk
+
+ # create physical volumes from new added hard disks
+ pvcreate /dev/sdb /dev/sdc
+ # to check physical volumes status
+ pvs
+
+ # create volume group out of physical groups
+ # HPCSA is the name of the volume group
+ vgcreate HPCSA /dev/sdb /dev/sdc
+
+ # status
+ vgs
+
+ # now to create logical volume from volume group 
+ lvcreate -n hpcsa_lab --size 8G HPCSA
+ # status of logical volume
+ lvs 
+
+ # partition the new logical volume
+ fdisk /dev/mapper/HPCSA-hpcsa_lab
+
+ # create a filesystem
+ mkfs.ext4 /dev/mapper/HPCSA-hpcsa_lab
+
+ # create a mount point and mount the logical volume
+ mkdir /mnt/lab
+ mount /dev/mapper/HPCSA-hpcsa_lab /mnt/lab
+
+ # Try to extend the logical volumes 
+ lvextend -L +2G /dev/mapper/HPCSA-hpcsa_lab
+ lvs
+
+ # resize the file system, to use all the new extended space
+ resize2fs /dev/mapper/HPCSA-hpcsa_lab
+ lvs
+
+ # How to create a snapshot of the logical volume, it is just a read only copy of the file system
+ lvcreate -L 1GB -s -n hpcsa_lab_snap /dev/mapper/HPCSA-hpcsa_lab
+
+ # how to merge the screenshots with original volume
+ lvconvert --merge /dev/mapper/HPCSA-hpcsa_lab_snap
+
+ # Note : if you want disk to be mounted automatically then add then in this file /etc/fstab
+ # Note : make sure when you are merging snapshot both snapshot and original volume should not be in use
+
