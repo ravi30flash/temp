@@ -1,0 +1,88 @@
+# pre-requisite
+requires 5 nodes 
+    * ceph-controller
+    * ceph-compute01
+    * ceph-compute02
+    * ceph-monitor
+    * ceph-client
+
+add 3 disk of 20GB each to ceph-compute01 ceph-compute02
+
+: controller
+# setup the machine 
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname ceph-controller
+
+# add entries to /etc/hosts
+    echo '192.168.xxx.xxx  ceph-controller.hpcsa.cdac.in  ceph-controller' >> /etc/hosts
+    echo '192.168.xxx.xxx  ceph-compute01.hpcsa.cdac.in   ceph-compute01' >> /etc/hosts
+    echo '192.168.xxx.xxx  ceph-compute02.hpcsa.cdac.in   ceph-compute02' >> /etc/hosts
+    echo '192.168.xxx.xxx  ceph-monitor.hpcsa.cdac.in     ceph-monitor' >> /etc/hosts
+    echo '192.168.xxx.xxx  ceph-client.hpcsa.cdac.in      ceph-client' >> /etc/hosts
+# copy host file to other nodes
+scp /etc/hosts root@ceph-compute01:/etc/hosts
+scp /etc/hosts root@ceph-compute02:/etc/hosts
+scp /etc/hosts root@ceph-monitor:/etc/hosts
+scp /etc/hosts root@ceph-client:/etc/hosts
+
+# instainstallll chrony to sync time to all nodes
+yum  chrony -y
+chronyc sourcestats
+
+# create user for ceph deplo
+echo "cephadm ALL = (root) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/cephadm
+chmod 0440 /etc/sudoers.d/cephadm
+
+# install packages
+yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+# configure chrony
+vim /etc/chrony.conf
+    -> comment all lines 
+    -> add `server ceph-controller`
+systemctl restart chronyd
+
+# Install the Ceph package and ceph deployment tool
+sudo rpm -Uvh https://download.ceph.com/rpm-mimic/el7/noarch/ceph-release-1-1.el7.noarch.rpm
+yum install ceph-deploy python2-pip  -y
+
+: compute01
+# setup the machine 
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname ceph-compute01
+
+: compute02
+# setup the machine 
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname ceph-compute02
+
+: monitor
+# setup the machine 
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname ceph-monitor
+
+: client
+# setup the machine 
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname ceph-client
+

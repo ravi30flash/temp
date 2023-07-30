@@ -1,0 +1,79 @@
+: Server
+# setup the machine 
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname Glusterfs-server
+
+# add repository orange
+wget --no-check-certificate -O /etc/yum.repos.d/beegfs.repo https://www.beegfs.io/release/beegfs_7.2/dists/beegfs-rhel7.repo
+
+# install the Packages
+yum install beegfs-utils beegfs-client beegfs-meta beegfs-storage beegfs-mgmtd
+
+# configure BeeGFS
+mkdir -p /mnt/beegfs/meta /mnt/beegfs/storage /mnt/beegfs/beegfs_mgmtd
+/opt/beegfs/sbin/beegfs-setup-mgmtd -p /mnt/beegfs/beegfs_mgmtd
+
+# edit the config file
+vim /etc/beegfs/beegfs-client.conf
+    -> add entry --> sysMgmtdHost = "your server VM IP"
+
+# start the services
+systemctl start beegfs-mgmtd;
+systemctl enable beegfs-mgmtd;
+systemctl status beegfs-mgmtd;
+
+# for metadata server
+/opt/beegfs/sbin/beegfs-setup-meta -p /mnt/beegfs/meta -s 1 -m <MDS IP>
+
+# for storage server
+systemctl start beegfs-storage;
+systemctl enable beegfs-storage;
+systemctl status beegfs-storage;
+
+
+
+
+: Client
+# setup the machine 
+setenforce 0;
+sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
+# disable the firewall
+systemctl stop firewalld; systemctl disable firewalld;
+# change the hostname
+hostnamectl set-hostname Glusterfs-client
+
+# add repository
+wget --no-check-certificate -O /etc/yum.repos.d/beegfs.repo https://www.beegfs.io/release/beegfs_7.2/dists/beegfs-rhel7.repo
+
+# install packages
+yum install -y kernel-devel beegfs-utils beegfs-client beegfs-mgmtd
+
+
+rm /lib/modules/3.10.0-1160.el7.x86_64/build
+ln -s /usr/src/kernels/3.10.0-1160.92.1.el7.x86_64/ /lib/modules/3.10.0-1160.el7.x86_64/build
+/etc/init.d/beegfs-client rebuild
+
+# setup the client 
+/opt/beegfs/sbin/beegfs-setup-client -m <MDS IP>
+mkdir /mnt/beegfs
+systemctl start beegfs-client
+systemctl enable beegfs-client
+
+systemctl start beegfs-storage
+systemctl enable beegfs-storage
+
+# edit the client configurations files
+nano /etc/beegfs/beegfs-client.conf
+
+# start the services
+systemctl start beegfs-client
+systemctl enable beegfs-client
+
+
+
+
+
