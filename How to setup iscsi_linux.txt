@@ -23,6 +23,26 @@ vgcreate vg_iscsi /dev/sdb /dev/sdc
 # to check partitions
 lvs
 
+# to check volume groups
+vgs
+
+# now to create logical volume from volume group 
+lvcreate -n lv_iscsi-disk-01 -L 1G vg_iscsi
+# lvcreate -n lv-iscsi --size 8G vg_iscsi
+
+# status of logical volume
+lvs 
+
+# partition the new logical volume
+fdisk /dev/mapper/vg_iscsi-lv_iscsi
+
+# create a filesystem
+mkfs.ext4 /dev/mapper/vg_iscsi-lv_iscsi
+
+# create a mount point and mount the logical volume
+mkdir /mnt/iscsi
+mount /dev/mapper/vg_iscsi-lv_iscsi /mnt/iscsi
+
 # install the targetcli Package
 yum install targetcli -y
 
