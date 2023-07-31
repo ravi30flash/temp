@@ -1,0 +1,53 @@
+################################## raid-5 #################################################
+set 4 hard-disk
+
+1.lsblk
+
+2. mdadm --create --verbose /dev/md0 --level=5 --raid-devices=3 /dev/sdd /dev/sde /dev/sdf --spare-devices=1 /dev/sdg
+
+3. cat /proc/mdstat
+
+4.  lsblk
+
+5.   fdisk /dev/md0
+
+6.   fdisk -l
+
+7.   mkfs.ext4 /dev/md0p1
+
+8.   mkdir /mnt/raid5/
+
+9.    mount /dev/md0p1 /mnt/raid5
+
+10.    blkid
+
+11.   [root@localhost ~]# vim /etc/fstab
+
+        UUID=6977612f-c56c-49b3-bd1f-134f069defec /mnt/raid5 ext4 defaults 0 0
+12. mount -a
+
+13. cd /mnt/raid5
+
+14. touch file.txt
+
+15. ls
+
+16.  dd if=/dev/zero of=1000mb.file bs=1024 count=5002400
+
+17.  lsblk
+
+18.  lsblk -tmd
+
+19.    mdadm --fail /dev/md0 /dev/sdg
+
+20.  mdadm --detail /dev/md0
+
+21.  mdadm -r /dev/md0 /dev/sdg
+
+22.   mdadm --detail /dev/md0
+
+23.   mdadm --add /dev/md0 /dev/sdg
+
+24.    mdadm --detail /dev/md0
+
+25.   df -Th

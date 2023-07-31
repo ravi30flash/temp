@@ -7,7 +7,7 @@ sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
 # disable the firewall
 systemctl stop firewalld; systemctl disable firewalld;
 # change the hostname
-hostnamectl set-hostname iscsi-server
+hostnamectl set-hostname iscsi-client
 
 # check if physical drives are added 
 lsblk
@@ -85,10 +85,15 @@ yum install iscsi-initiator-utils -y
 cd /etc/iscsi
 
 # edit the initiatorname file
-echo "iqn.2022-12.acts.student:306631cea220" > /etc/iscsi
+
+echo "InitiatorName=iqn.2022-12.acts.student:306631cea220" > /etc/iscsi/initiatorname.iscsi
+
 
 # start the iscsi service
 systemctl start iscsi
 
 # check status of the service
 systemctl status iscsi
+
+# find the iscsi server
+iscsiadm -m discovery -t st -p 10.10.10.203 --login
