@@ -7,7 +7,7 @@ sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
 # disable the firewall
 systemctl stop firewalld; systemctl disable firewalld;
 # change the hostname
-hostnamectl set-hostname iscsi-client
+hostnamectl set-hostname iscsi-server2
 
 # check if physical drives are added 
 lsblk
@@ -27,7 +27,7 @@ lvs
 vgs
 
 # now to create logical volume from volume group 
-lvcreate -n lv_iscsi-disk-01 -L 1G vg_iscsi
+lvcreate -n iscsi_disk -L 18G vg_iscsi
 # lvcreate -n lv-iscsi --size 8G vg_iscsi
 
 # status of logical volume
@@ -97,3 +97,21 @@ systemctl status iscsi
 
 # find the iscsi server
 iscsiadm -m discovery -t st -p 10.10.10.203 --login
+
+
+
+
+
+
+
+==========================personal experiment========================
+targetcli
+# create device block
+/> /backstores/block create newlun /dev/vg_iscsi-lv_iscsi--disk--01
+# create iscsi iqn number
+> /iscsi create
+# map the block data storage into iscsi
+> /iscsi/iqn.2003-01.org.linux-iscsi.iscsi-server.x8664:sn.b6f47fe38a5a/tpg1/luns create /backstores/block/newlun
+# add client acl
+> /iscsi/iqn.2003-01.org.linux-iscsi.iscsi-server.x8664:sn.b6f47fe38a5a/tpg1/acls create [client_initiator]
+> exit
