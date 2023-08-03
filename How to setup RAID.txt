@@ -5,7 +5,7 @@ sed -i 's/SELINUX=.*$/SELINUX=disabled/g' /etc/selinux/config
 systemctl stop firewalld; systemctl disable firewalld;
 # change the hostname
 read -p 'Enter Hostname: ' hostname
-hostnamectl set-hostname $hostname
+hostnamectl set-hostname raid-master
 
 # installing Raid Package
 yum install mdadm -y &> /dev/null
@@ -22,7 +22,7 @@ mkfs.ext4 /dev/md0
 
 # mount newly created parition 
 mkdir /mnt/raid0
-mnt /dev/md0 /mnt/raid0
+mount /dev/md0 /mnt/raid0
 
 # to get information about the newly created partion
 mdadm --detail /dev/md0
